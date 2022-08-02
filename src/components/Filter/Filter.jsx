@@ -1,4 +1,4 @@
-const Filter = ({ value, onChange }) => {
+const Filter = ({ onChange, value }) => {
     return (
         <label>
             Find contacts by name

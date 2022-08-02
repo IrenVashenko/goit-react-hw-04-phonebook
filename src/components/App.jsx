@@ -1,71 +1,81 @@
-import React, { Component } from 'react';
 import { nanoid } from 'nanoid';
+import { useState, useEffect, useMemo } from 'react';
 
 import Container from './Container';
-import ContactForm from './Form/ContactForm';
+import { ContactFormed } from './Form/ContactForm';
 import ContactList from './ContactList/ContactList';
 import Filter from './Filter/Filter';
 
-class App extends Component {
-  state = {
-    contacts: [
-      { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
-      { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
-      { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
-      { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
-    ],
-    filter: '',
-  };
+// const LS_KEY = 'raeder_item_index';
 
-  addContact = ({ name, number }) => {
-    const nameFilter = this.state.contacts.some(nameContact => nameContact.name === name);
+export default function App() {
+  const initialState = [
+    { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
+    { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
+    { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
+    { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
+  ];
 
-    const contact = {
-      id: nanoid(),
-      name,
-      number,
-    }
+  const [contacts, setContact] = useState(() => {
+    return JSON.parse(window.localStorage.getItem('contacts')) ?? initialState
+  });
+  const [filter, setFilter] = useState('');
 
-    if (nameFilter) {
+  useEffect(() => {
+    window.localStorage.setItem('contacts', JSON.stringify(contacts))
+  }, [contacts]);
+
+  const addContact = ({ name, number }) => {
+    const nameFilter = contacts.map(contact => contact.name);
+    if (nameFilter.includes(name)) {
       alert(`${name} is already in contacts`)
     }
     else {
-      this.setState(({ contacts }) => ({
-        contacts: [...contacts, contact]
-      }));
+      const contact = {
+        id: nanoid(),
+        name,
+        number,
+      }
+      setContact(prevState => [...prevState, contact]);
     }
   }
 
-  handlerFilter = e => {
-    this.setState({ filter: e.currentTarget.value })
+  const handlerFilter = e => {
+    setFilter(e.target.value)
   }
 
-  deleteContact = contactId => {
-    this.setState(prevState => ({
-      contacts: prevState.contacts.filter(contact => (
+  const deleteContact = contactId => {
+    setContact(prevState => {
+      return prevState.filter(contact => (
         contact.id !== contactId
       ))
-    }))
-  }
+    });
+  };
 
-  render() {
-    const { filter } = this.state;
-    const normalizedFilter = filter.toLowerCase();
-    const visibleList = this.state.contacts.filter(contact =>
-      contact.name.toLowerCase().includes(normalizedFilter)
-    );
+  const filteredPlanets = useMemo(
+    () => {
+      return contacts.filter(contact =>
+        contact.name.toLowerCase().includes(filter) || contact.name.toUpperCase().includes(filter))
+    },
+    [contacts, filter]
+  );
 
-    return (
-      <Container>
-        <h2>Phonebook</h2>
-        <ContactForm onSubmit={this.addContact} />
+  return (
+    <Container>
+      <h2>Phonebook</h2>
+      <ContactFormed
+        addContact={addContact}
+      />
 
-        <h2>Contacts</h2>
-        <Filter value={filter} onChange={this.handlerFilter} />
-        <ContactList value={visibleList} onDeleteContact={this.deleteContact} />
-      </Container>
-    )
-  }
-};
-
-export default App;
+      <h2>Contacts</h2>
+      <Filter
+        value={filter}
+        onChange={handlerFilter}
+      />
+      <ContactList
+        value={filteredPlanets}
+        onDeleteContact={deleteContact}
+      />
+    </Container>
+  )
+}
